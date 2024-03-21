@@ -10,6 +10,6 @@ fn main() {
     let seckey = u64::from_str_radix("6C616D6264617370", 16).unwrap();
 
     let g = BLS12381Curve::generator();
-    let privkey = g.operate_with_self(seckey);
-    println!("{:?}", privkey);
+    let pubkey = g.operate_with_self(seckey);
+    println!("{:?}", pubkey);
 }

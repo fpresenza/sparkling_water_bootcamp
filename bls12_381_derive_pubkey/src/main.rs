@@ -15,5 +15,8 @@ fn main() {
 
     // compose 'g' with itself 'seckey' times
     let pubkey = g.operate_with_self(seckey);
-    println!("{:?}", pubkey);
+
+    // get affine (uncompressed) coordinates as a hexstring
+    println!("public key x-affine coordinate: {:?}", pubkey.to_affine().x().value().to_hex());
+    println!("public key y-affine coordinate: {:?}", pubkey.to_affine().y().value().to_hex());
 }

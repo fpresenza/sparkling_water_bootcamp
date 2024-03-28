@@ -7,8 +7,8 @@ use lambdaworks_math::{
 };
 
 fn main() {
-    // parse secret key into an unsigned integer
-    let seckey = u64::from_str_radix("6C616D6264617370", 16).unwrap();
+    // secret key
+    let seckey: u64 = 0x6C616D6264617370;
 
     // group generator
     let g = BLS12381Curve::generator();

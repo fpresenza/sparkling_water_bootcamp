@@ -1,3 +1,4 @@
+use gcd::Gcd;
 use lambdaworks_math::field::fields::u64_prime_field::U64FieldElement;
 
 fn main() {
@@ -9,17 +10,18 @@ fn main() {
     // let p = 598991051_u64;
     // let q = 2840026297_u64;
     // MOD equals p * q
-    const MOD: u64 = 1701150336507668147_u64;
+    const MOD: u64 = 1701150336507668147;
     type FEMOD = U64FieldElement<MOD>;
     const PHI_MOD: u64 = 1701150333068650800;
     type FEPHI = U64FieldElement<PHI_MOD>;
-    const PHI_PHI_MOD: u64 = 388215687235276800;
+    let phi_phi_mod = 388215687235276800_u64;
 
     // TODO: using carmichael's is suppossedly more eficient.
 
     // Generate keys
     // It was checked using SageMath that 65537 is coprime to PHI_MOD
     let encryption_key = 65537_u64;
+    assert_eq!(Gcd::gcd(encryption_key, PHI_MOD), 1);
     println!("Encryption key is: ({}, {})", encryption_key, MOD);
 
     // Here I use the .pow() method instead of the .inv() method since only
@@ -29,19 +31,16 @@ fn main() {
     // but
     //      d != e^{PHI_MOD - 2} % PHI_MOD 
     // as is implemented in the .inv() method.
-    let binding = FEPHI::new(encryption_key).pow(PHI_PHI_MOD - 1);
-    let decryption_key = *binding.value() as u64;
+    let decryption_key = *FEPHI::new(encryption_key).pow(phi_phi_mod - 1).value();
     println!("Decryption key is: ({}, {})", decryption_key, MOD);
 
     // encrypt messages
     let plain_msg = 68353567629759241_u64;
     println!("Plain message is: {}", plain_msg);
-    let binding = FEMOD::new(plain_msg).pow(encryption_key);
     
-    let cypher_msg = *binding.value() as u64;
+    let cypher_msg = *FEMOD::new(plain_msg).pow(encryption_key).value();
     println!("Encrypted message is: {}", cypher_msg);
     
-    let binding = FEMOD::new(cypher_msg).pow(decryption_key);
-    let recov_msg = *binding.value();
+    let recov_msg = *FEMOD::new(cypher_msg).pow(decryption_key).value();
     println!("Recovered message is {}", recov_msg);
 }

@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 lambdaworks-math = "0.7.0"
-gcd = "2.3.0"
+num-primes = "0.3.0"
+number_theory = {path = "../../number_theory"}

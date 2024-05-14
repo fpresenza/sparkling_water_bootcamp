@@ -1,4 +1,5 @@
 use num_primes::Generator;
+use blake2::{Blake2s256, Digest};
 use lambdaworks_math::{traits::ByteConversion, unsigned_integer::element::UnsignedInteger};
 use number_theory::{power_mod, extended_euclidean_algorithm};
 
@@ -19,14 +20,15 @@ struct RSA<const NUM_LIMBS: usize> {
 }
 
 impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
+
     fn new() -> Self {
         let zero = UnsignedInteger::<NUM_LIMBS>::from_u64(0);
         let one = UnsignedInteger::<NUM_LIMBS>::from_u64(1);
-        let bit_size = NUM_LIMBS * LIMB_SIZE_BIT / 4;
 
         // generate two random primes of bitsize
         //      NUM_LIMBS * LIMB_SIZE_BIT / 4 
         // to prevent UnsignedInteger overflow.
+        let bit_size = NUM_LIMBS * LIMB_SIZE_BIT / 4;
         let p = random_unsigned_integer::<NUM_LIMBS>(bit_size);
         let q = random_unsigned_integer::<NUM_LIMBS>(bit_size);
 
@@ -72,67 +74,128 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
 }
 
 fn main() {
-    const NUM_LIMBS: usize = 8;
+    const NUM_LIMBS: usize = 16;
     type RSA512 = RSA<NUM_LIMBS>;
 
+    println!("RSA {} bits", NUM_LIMBS * LIMB_SIZE_BIT);
+
+    //
+    // Generate Keys //
+    //   
     println!("----------");
-    println!("Generating Alice's key.");
-    let alica_rsa = RSA512::new();
-    println!("Alice's key: {:?}", alica_rsa);
+    println!("Generating Alice's keys.");
+    let alice_rsa = RSA512::new();
+    // println!("Alice's keys: {:?}", alice_rsa);
     println!("----------");
-    println!("Generating Bob's key.");
+    println!("Generating Bob's keys.");
     let bob_rsa = RSA512::new();
-    println!("Bob's key: {:?}", alica_rsa);
-
-    // encrypt messages
+    // println!("Bob's keys: {:?}", bob_rsa);
     println!("----------");
-    // let message = 
-    let message = "Hi! This is a Secret Message.";
-    let max_bytes = LIMB_SIZE_BYTE * NUM_LIMBS;
-    assert!(message.len() <= max_bytes);
-    println!("Plain message from Alice to Bob: {:?}", message);
-    let mut padded_message = (0..max_bytes-message.len()).map(|_| "\x00").collect::<String>();
-    padded_message.push_str(message);
-    // println!("padded_message {:?}", padded_message);
 
-    let plaintext_as_bytes = padded_message.as_bytes();
+
+    //
+    // Encrypt plaintext //
+    //
+    let plaintext = "Secret message.";
+    println!("Plaintext from Alice to Bob: {:?}", plaintext);
+
+    // check message has proper size
+    let extra_bytes = NUM_LIMBS * LIMB_SIZE_BYTE - plaintext.len();
+    assert!(extra_bytes > 0);
+
+    let mut plaintext_as_bytes = plaintext.as_bytes().to_vec();
     // println!("Plaintext as bytes: {:?}", plaintext_as_bytes);
 
-    let plaintext_as_integer = UnsignedInteger::<NUM_LIMBS>::from_bytes_be(
-        &plaintext_as_bytes
-    ).unwrap();
-    // println!("Message as UnsigedInteger: {:?}", plaintext_as_integer);
+    let mut padded_plaintext_as_bytes = vec![0; extra_bytes];
+    padded_plaintext_as_bytes.append(&mut plaintext_as_bytes);
+    // println!("Padded plaintext as bytes: {:?}", padded_plaintext_as_bytes);
 
-    let cyphertext_as_integer = alica_rsa.encrypt(
+    let plaintext_as_integer = UnsignedInteger::<NUM_LIMBS>::from_bytes_be(
+        &padded_plaintext_as_bytes
+    ).unwrap();
+    // println!("Plaintext as integer: {:?}", plaintext_as_integer);
+
+    let cyphertext_as_integer = alice_rsa.encrypt(
         plaintext_as_integer,
         bob_rsa.encryption_exp.clone(),
         &bob_rsa.modulus
     );
-    // println!("Encrypted message as UnsigedInteger: {:?}", cyphertext_as_integer);
+    // println!("Cyphertex as integer: {:?}", cyphertext_as_integer);
     
     let cyphertext_as_bytes = cyphertext_as_integer.to_bytes_be();
-    // println!("Encrypted message as bytes from Alice to Bob: {:?}", cyphertext_as_bytes);
+    // println!("Cyphertex as bytes from Alice to Bob: {:?}", cyphertext_as_bytes);
+
+    //
+    // Signature scheme //
+    // Uses Blake2s256 hash function with digest of 32 bytes
+    //
+    const DIGEST_SIZE_BYTE: usize = 32;
+    let extra_bytes = NUM_LIMBS * LIMB_SIZE_BYTE - DIGEST_SIZE_BYTE;
+    let mut hasher = Blake2s256::new();
+    hasher.update(padded_plaintext_as_bytes);
+    let mut hashtext_as_bytes = vec![0; extra_bytes];
+    hashtext_as_bytes.append(&mut hasher.finalize().to_vec());
+    // println!("Hashed text as bytes: {:?}", hashtext_as_bytes);
+    
+    let hashtext_as_integer = UnsignedInteger::<NUM_LIMBS>::from_bytes_be(
+        &hashtext_as_bytes
+    ).unwrap();
+    // println!("Hashed text as integer: {:?}", hashtext_as_integer);
+    assert!(hashtext_as_integer < bob_rsa.modulus);
+
+    let signedtext_as_integer = alice_rsa.decrypt(hashtext_as_integer);
+    let signedtext_as_bytes = signedtext_as_integer.to_bytes_be();
 
     println!(
         "
         ---------------------------->
-        Sending over insecure channel
+        Sending over insecure channel:
+
+        message: {:?}
+
+        signature: {:?}
         ---------------------------->
-        "
+        ",
+        cyphertext_as_bytes,
+        signedtext_as_bytes
     );
 
     let recovered_cyphertext_as_integer = UnsignedInteger::<NUM_LIMBS>::from_bytes_be(
         &cyphertext_as_bytes  
     ).unwrap();
-    // println!("Recovered Encrypted message as UnsigedInteger: {:?}", recovered_cyphertext_as_integer);
+    // println!("Recovered cyphertex as integer: {:?}", recovered_cyphertext_as_integer);
 
     let recovered_plaintext_as_integer = bob_rsa.decrypt(recovered_cyphertext_as_integer);
-    // println!("Recovered message is {:?}", recovered_plaintext_as_integer);
+    // println!("Recovered plaintext: {:?}", recovered_plaintext_as_integer);
 
     let recovered_plaintext_as_bytes = recovered_plaintext_as_integer.to_bytes_be();
-    // println!("Recovered plaintext as bytes is {:?}", recovered_plaintext_as_bytes);
+    // println!("Recovered plaintext as bytes: {:?}", recovered_plaintext_as_bytes);
 
-    let recoverd_message = String::from_utf8(recovered_plaintext_as_bytes);
-    println!("Recovered message {:?}", recoverd_message.unwrap());
+    let recovered_plaintext = String::from_utf8(recovered_plaintext_as_bytes).unwrap();
+    println!("Recovered plaintext: {:?}", recovered_plaintext);
 
+    // check signature validity
+    let recovered_signedtext_as_integer =  UnsignedInteger::<NUM_LIMBS>::from_bytes_be(
+        &signedtext_as_bytes  
+    ).unwrap();
+
+    let recovered_hashtext_as_integer = bob_rsa.encrypt(
+        recovered_signedtext_as_integer,
+        alice_rsa.encryption_exp.clone(),
+        &alice_rsa.modulus
+    );
+    let mut recovered_hashtext_as_bytes = recovered_hashtext_as_integer.to_bytes_be();
+    recovered_hashtext_as_bytes.drain(0..extra_bytes);
+    // println!("Recovered hashtext as bytes{:?}", recovered_hashtext_as_bytes);
+
+    let mut hasher = Blake2s256::new();
+    hasher.update(recovered_plaintext.as_bytes());
+    let hashed_recovered_plaintext_as_bytes = hasher.finalize().to_vec();
+    // println!("Hashed recovered plaintext as bytes: {:?}", hashed_recovered_plaintext_as_bytes);
+
+    if recovered_hashtext_as_bytes == hashed_recovered_plaintext_as_bytes {
+        println!("Signature has been successfully validated.");
+    } else {
+        println!("Signature is invalid.");
+    }
 }

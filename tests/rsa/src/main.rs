@@ -1,17 +1,12 @@
-use num_primes::Generator;
 use blake2::{Blake2s256, Digest};
 use lambdaworks_math::{traits::ByteConversion, unsigned_integer::element::UnsignedInteger};
 use number_theory::{power_mod, extended_euclidean_algorithm};
+use random::random_unsigned_integer;
 
 const LIMB_SIZE_BIT: usize = 64;
 const LIMB_SIZE_BYTE: usize = 8;
 const DIGEST_SIZE_BYTE: usize = 32;
 
-fn random_unsigned_integer<const NUM_LIMBS: usize>(bit_size: usize) -> UnsignedInteger<NUM_LIMBS> {
-    UnsignedInteger::<NUM_LIMBS>::from_hex(
-        &Generator::new_prime(bit_size).to_str_radix(16)
-    ).unwrap()
-}
 
 #[derive(Debug)]
 struct RSA<const NUM_LIMBS: usize> {

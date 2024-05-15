@@ -7,6 +7,7 @@ const LIMB_SIZE_BIT: usize = 64;
 const LIMB_SIZE_BYTE: usize = 8;
 const DIGEST_SIZE_BYTE: usize = 32;
 
+struct PubKey<const NUM_LIMBS: usize>(UnsignedInteger<NUM_LIMBS>, UnsignedInteger<NUM_LIMBS>);
 
 #[derive(Debug)]
 struct RSA<const NUM_LIMBS: usize> {
@@ -51,8 +52,8 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
         }
     }
 
-    fn public_key(&self) -> (UnsignedInteger<NUM_LIMBS>, UnsignedInteger<NUM_LIMBS>) {
-        (self.encryption_exp.clone(), self.modulus.clone())
+    fn public_key(&self) -> PubKey<NUM_LIMBS> {
+        PubKey(self.encryption_exp.clone(), self.modulus.clone())
     }
 
     fn plaintext_as_bytes(plaintext: &str) -> Vec<u8> {
@@ -66,13 +67,8 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
         padded_plaintext_as_bytes
     }
 
-
-    fn encrypt(
-            &self,
-            plaintext_as_bytes: Vec<u8>,
-            public_key: (UnsignedInteger<NUM_LIMBS>, UnsignedInteger<NUM_LIMBS>)
-        ) -> Vec<u8> {
-        let (exponent, modulus) = public_key;
+    fn encrypt(&self, plaintext_as_bytes: Vec<u8>, public_key: PubKey<NUM_LIMBS>) -> Vec<u8> {
+        let PubKey(exponent, modulus) = public_key;
         let plaintext_as_integer = UnsignedInteger::<NUM_LIMBS>::from_bytes_be(
             &plaintext_as_bytes
         ).unwrap();
@@ -91,8 +87,7 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
             self.decryption_exp.clone(),
             &self.modulus
         );
-        let decrypted_bytes = decrypted_integer.to_bytes_be();
-        decrypted_bytes
+        decrypted_integer.to_bytes_be()
     }
 
     // Signature scheme: uses Blake2s256 hash function with digest of 32 bytes
@@ -111,7 +106,7 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
             &self,
             signedtext_as_bytes: Vec<u8>, 
             plaintext_as_bytes: Vec<u8>,
-            public_key: (UnsignedInteger<NUM_LIMBS>, UnsignedInteger<NUM_LIMBS>)
+            public_key: PubKey<NUM_LIMBS>
         ) -> bool {
 
         let mut hashtext_as_bytes = self.encrypt(
@@ -123,8 +118,7 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
         let extra_bytes = NUM_LIMBS * LIMB_SIZE_BYTE - DIGEST_SIZE_BYTE;
         hashtext_as_bytes.drain(0..extra_bytes);
         hasher.update(plaintext_as_bytes);
-        let hashed_plaintext_as_bytes = hasher.finalize().to_vec();
-        hashtext_as_bytes == hashed_plaintext_as_bytes
+        hashtext_as_bytes == hasher.finalize().to_vec()
     }
 }
 
@@ -134,6 +128,7 @@ fn main() {
     // In this implementation, the modulus is approximately
     // half of the size of the RSA, which therefore should be 
     // of at least 64 bytes = 512 bits = 8 limbs.
+    // In the following example 16 limbs are used.
     const NUM_LIMBS: usize = 16;
     type RSA512 = RSA<NUM_LIMBS>;
 

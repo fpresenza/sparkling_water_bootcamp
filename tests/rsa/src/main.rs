@@ -10,13 +10,13 @@ const DIGEST_SIZE_BYTE: usize = 32;
 struct PubKey<const NUM_LIMBS: usize>(UnsignedInteger<NUM_LIMBS>, UnsignedInteger<NUM_LIMBS>);
 
 #[derive(Debug)]
-struct RSA<const NUM_LIMBS: usize> {
+struct Rsa<const NUM_LIMBS: usize> {
     encryption_exp: UnsignedInteger<NUM_LIMBS>,
     decryption_exp: UnsignedInteger<NUM_LIMBS>,
     modulus: UnsignedInteger<NUM_LIMBS>
 }
 
-impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
+impl<const NUM_LIMBS: usize> Rsa<NUM_LIMBS> {
 
     fn new() -> Self {
         let zero = UnsignedInteger::<NUM_LIMBS>::from_u64(0);
@@ -29,8 +29,8 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
         let p = random_unsigned_integer::<NUM_LIMBS>(bit_size);
         let q = random_unsigned_integer::<NUM_LIMBS>(bit_size);
 
-        let modulus = &p * &q;
-        let euler_phi = (&p - &one) * (&q - &one);
+        let modulus = p * q;
+        let euler_phi = (p - one) * (q - one);
 
         // check 65537 < euler_phi and the they have no common factors.
         // Since 65537 is prime, it is sufficient to check that is not a
@@ -41,8 +41,8 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
         assert!(rem != zero);
         
         let (_, decryption_exp, _) = extended_euclidean_algorithm(
-            encryption_exp.clone(),
-            euler_phi.clone()
+            encryption_exp,
+            euler_phi
         );
 
         Self { 
@@ -53,7 +53,7 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
     }
 
     fn public_key(&self) -> PubKey<NUM_LIMBS> {
-        PubKey(self.encryption_exp.clone(), self.modulus.clone())
+        PubKey(self.encryption_exp, self.modulus)
     }
 
     fn plaintext_as_bytes(plaintext: &str) -> Vec<u8> {
@@ -84,7 +84,7 @@ impl<const NUM_LIMBS: usize> RSA<NUM_LIMBS> {
 
         let decrypted_integer = power_mod(
             encripted_integer,
-            self.decryption_exp.clone(),
+            self.decryption_exp,
             &self.modulus
         );
         decrypted_integer.to_bytes_be()
@@ -130,7 +130,7 @@ fn main() {
     // of at least 64 bytes = 512 bits = 8 limbs.
     // In the following example 16 limbs are used.
     const NUM_LIMBS: usize = 16;
-    type RSA512 = RSA<NUM_LIMBS>;
+    type RSA512 = Rsa<NUM_LIMBS>;
 
     println!("RSA {} bits", NUM_LIMBS * LIMB_SIZE_BIT);
 

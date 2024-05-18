@@ -14,7 +14,6 @@ fn main() {
     // Define secret
     let secret = FE::new(150);
     println!("Secret is: {}", secret.value());
-    println!("");
     
     // Protocol Parameters
     let n_shares = 5;
@@ -41,13 +40,12 @@ fn main() {
     for i in 1..=n_shares {
         println!("({}, {})", i, shares[(i as usize) - 1].value());
     }
-    println!("");
 
     let parties: [u64; 3] = [1, 4, 3];
     println!("If parties {:?} gather togheter, they can reveal the secret.", parties);
 
     let inter = Polynomial::interpolate(
-        &parties.map(|i| FE::new(i)),
+        &parties.map(FE::new),
         &parties.map(|i| shares[(i as usize) - 1])
     ).unwrap();
 

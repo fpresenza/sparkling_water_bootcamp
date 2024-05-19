@@ -1,0 +1,8 @@
+[package]
+name = "diffie_hellman"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lambdaworks-math = "0.7.0"
+random = {path = "../../random"}

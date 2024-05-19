@@ -44,4 +44,5 @@ fn main() {
     println!("Alice's Shared Key: {:?}", alice_shared_key.to_affine());
     let bob_shared_key = alice_public_number.operate_with_self(bob_secret_number);
     println!("Bob's Shared Key: {:?}", bob_shared_key.to_affine());
+    assert_eq!(alice_shared_key, bob_shared_key);
 }

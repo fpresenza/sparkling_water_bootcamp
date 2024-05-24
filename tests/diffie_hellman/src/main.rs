@@ -9,8 +9,8 @@ use lambdaworks_math::elliptic_curve::{
 use lambdaworks_math::unsigned_integer::element::UnsignedInteger;
 use random::random_unsigned_integer_in_range;
 
-const BLS12831_LIMBS: usize = 4;
-const BLS12381_SUBGROUP_ORDER: UnsignedInteger<BLS12831_LIMBS> = UnsignedInteger::<BLS12831_LIMBS>::from_hex_unchecked(
+const BLS12381_LIMBS: usize = 4;
+const BLS12381_SUBGROUP_ORDER: UnsignedInteger<BLS12381_LIMBS> = UnsignedInteger::<BLS12381_LIMBS>::from_hex_unchecked(
     "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
 );
 
@@ -54,8 +54,8 @@ impl<T: IsEllipticCurve, const NUM_LIMBS: usize> DiffieHellman<T, NUM_LIMBS> {
 
 fn main() {
     // Diffie-Hellman with BLS12_384 curve
-    let mut alice = DiffieHellman::<BLS12381Curve, BLS12831_LIMBS>::new(BLS12381_SUBGROUP_ORDER);
-    let mut bob = DiffieHellman::<BLS12381Curve, BLS12831_LIMBS>::new(BLS12381_SUBGROUP_ORDER);
+    let mut alice = DiffieHellman::<BLS12381Curve, BLS12381_LIMBS>::new(BLS12381_SUBGROUP_ORDER);
+    let mut bob = DiffieHellman::<BLS12381Curve, BLS12381_LIMBS>::new(BLS12381_SUBGROUP_ORDER);
 
     // Diffie-Hellman with BN_254 curve
     let mut charly = DiffieHellman::<BN254Curve, BN254_LIMBS>::new(BN254_SUBGROUP_ORDER);

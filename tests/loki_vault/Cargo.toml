@@ -1,0 +1,8 @@
+[package]
+name = "loki_vault"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lambdaworks-math = "0.7.0"
+lambdaworks-crypto = "0.7.0"

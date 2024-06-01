@@ -125,22 +125,27 @@ fn main() {
 
     println!("Trying to find alpha as one of the 64 roots of unity...");
     // let mut point: ShortWeierstrassProjectivePoint::<BLS12381Curve>;
-    let mut candidate = UnsignedInteger::<8>::from(0_u64);
-    for k in 1..64 {
+    // let mut candidate = UnsignedInteger::<8>::from(0_u64);
+    let mut k = 1;
+    let alpha = loop {
         let pow = UnsignedInteger::<8>::from(k as u64);
-        candidate = power_mod(primitive_root, pow, &r);
+        let candidate = power_mod(primitive_root, pow, &r);
         let point = &g1.operate_with_self(candidate);
         if point == alpha_g1 {
-            break
+            break candidate
         }
-    }
-    println!("Alpha found! The secret number is {:?}", candidate);
+        k += 1;
+        if k > 64 {
+            panic!("Secret number not found.");
+        }
+    };
+    println!("Alpha found! The secret number is {:?}", alpha);
     // candidate = 0xe4840ac57f86f5e293b1d67bc8de5d9a12a70a615d0b8e4d2fc5e69ac5db47f
     // Now we can fake proofs
 
     // Create fake evaluation point
     println!("Creating fake evaluation proof...");
-    let alpha = UnsignedInteger::<4>::from_hex_unchecked(&candidate.to_hex());  // ugly way of reducing from 8 to 4 limbs
+    let alpha = UnsignedInteger::<4>::from_hex_unchecked(&alpha.to_hex());  // ugly way of reducing from 8 to 4 limbs
     let fake_p_eval_at_alpha = p.evaluate(&FrElement::from(&alpha));
     let num = fake_p_eval_at_alpha - FrElement::from(3);
     let den = FrElement::from(&alpha) - FrElement::from(1);

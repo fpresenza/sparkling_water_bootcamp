@@ -1,7 +1,7 @@
 use blake2::{Blake2s256, Digest};
 use lambdaworks_math::{traits::ByteConversion, unsigned_integer::element::UnsignedInteger};
 use number_theory::{power_mod, extended_euclidean_algorithm};
-use random::random_unsigned_integer;
+use random::random_prime_from_bitsize;
 
 const LIMB_SIZE_BIT: usize = 64;
 const LIMB_SIZE_BYTE: usize = 8;
@@ -26,8 +26,8 @@ impl<const NUM_LIMBS: usize> Rsa<NUM_LIMBS> {
         //      NUM_LIMBS * LIMB_SIZE_BIT / 4 
         // to prevent UnsignedInteger overflow.
         let bit_size = NUM_LIMBS * LIMB_SIZE_BIT / 4;
-        let p = random_unsigned_integer::<NUM_LIMBS>(bit_size);
-        let q = random_unsigned_integer::<NUM_LIMBS>(bit_size);
+        let p = random_prime_from_bitsize::<NUM_LIMBS>(bit_size);
+        let q = random_prime_from_bitsize::<NUM_LIMBS>(bit_size);
 
         let modulus = p * q;
         let euler_phi = (p - one) * (q - one);

@@ -7,7 +7,7 @@ use lambdaworks_math::elliptic_curve::{
         }
 };
 use lambdaworks_math::unsigned_integer::element::UnsignedInteger;
-use random::random_unsigned_integer_in_range;
+use random::random_integer_in_range;
 
 const BLS12381_LIMBS: usize = 4;
 const BLS12381_SUBGROUP_ORDER: UnsignedInteger<BLS12381_LIMBS> = UnsignedInteger::<BLS12381_LIMBS>::from_hex_unchecked(
@@ -32,7 +32,7 @@ impl<T: IsEllipticCurve, const NUM_LIMBS: usize> DiffieHellman<T, NUM_LIMBS> {
         let zero = UnsignedInteger::<NUM_LIMBS>::from_u64(0);
         
         // generate private number
-        let private_number = random_unsigned_integer_in_range::<NUM_LIMBS>(zero, order);
+        let private_number = random_integer_in_range::<NUM_LIMBS>(zero, order);
         // println!("Private Number: {:?}", private_number);
         let generator = T::generator();
     

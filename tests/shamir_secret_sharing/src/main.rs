@@ -5,6 +5,8 @@ use lambdaworks_math::{
 };
 
 const MODULUS: u64 = 173;
+const N_SHARES: u64 = 5;
+const N_SUFFICIENT: usize = 3;
 type FE = U64FieldElement<MODULUS>;
 
 fn main() {
@@ -15,17 +17,13 @@ fn main() {
     let secret = FE::new(150);
     println!("Secret is: {}", secret.value());
     
-    // Protocol Parameters
-    let n_shares = 5;
-    let n_suff   = 3;
-
     // Create coefficient vector. First coeff is the secret.
     let mut coeffs = vec![secret];
 
-    // Append the random coefficients in the range 1..n_suff-1
+    // Append the random coefficients in the range 1..N_SUFFICIENT-1
     coeffs.append(
         &mut
-        (1..=n_suff-1)
+        (1..=N_SUFFICIENT-1)
         .map(|_| FE::new(rng.gen_range(0..MODULUS)))
         .collect()
     );
@@ -33,15 +31,24 @@ fn main() {
     // Construct polynomial
     let poly = Polynomial::new(&coeffs);
 
-    let shares: Vec<FE> = (1..=n_shares)
+    let shares: Vec<FE> = (1..=N_SHARES)
         .map(|i| poly.evaluate(&FE::new(i)))
         .collect();
     println!("The shares to distribute are:");
-    for i in 1..=n_shares {
+    for i in 1..=N_SHARES {
         println!("({}, {})", i, shares[(i as usize) - 1].value());
     }
 
-    let parties: [u64; 3] = [1, 4, 3];
+    let mut parties = [0_u64; N_SUFFICIENT];
+    // let parties: [u64; 3] = [1, 4, 3];
+    let mut i = 0;
+    while i < N_SUFFICIENT {
+        let rand_party = rand::thread_rng().gen_range(1..=N_SHARES);
+        if !parties.contains(&rand_party) {
+            parties[i] = rand_party;
+            i += 1;
+        }
+    }
     println!("If parties {:?} gather togheter, they can reveal the secret.", parties);
 
     let inter = Polynomial::interpolate(

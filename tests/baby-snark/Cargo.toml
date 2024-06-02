@@ -1,0 +1,8 @@
+[package]
+name = "baby-snark"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lambdaworks-math = "0.7.0"
+baby-snark = { path = "../../../lambdaworks/examples/baby-snark" }

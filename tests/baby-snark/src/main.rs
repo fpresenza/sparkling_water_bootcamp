@@ -1,5 +1,5 @@
 use baby_snark::{
-    utils::i64_vec_to_field,
+    utils::{i64_vec_to_field, i64_matrix_to_field},
     setup,
     ssp::SquareSpanProgram,
     scs::SquareConstraintSystem,
@@ -8,17 +8,22 @@ use baby_snark::{
 };
 
 fn main() {
+    // Cirtcuit: two fan-in 2 xor gates in cascade <-> one fan-in 3 xor gate
     // Define Constraint Matrix 
-    let u = vec![
-        i64_vec_to_field(&[-1, 2, 0, 0]),
-        i64_vec_to_field(&[-1, 0, 2, 0]),
-        i64_vec_to_field(&[-1, 0, 0, 2]),
-        i64_vec_to_field(&[-1, 2, 2, -4]),
-    ];
-    let witness = i64_vec_to_field(&[1, 1, 1]);
-    let public = i64_vec_to_field(&[1]);
+    let u = i64_matrix_to_field(&[
+        &[-1, 2, 0, 0, 0, 0],
+        &[-1, 0, 2, 0, 0, 0],
+        &[-1, 0, 0, 2, 0, 0],
+        &[-1, 0, 0, 0, 2, 0],
+        &[-1, 0, 0, 0, 0, 2],
+        &[-1, 1, 1, 0, 1, 0],
+        &[-1, 0, 0, 1, 1, 1]
+    ]);
+    let public = i64_vec_to_field(&[1, 1, 0, 1]);
+    let witness = i64_vec_to_field(&[1, 0]);
     let mut input = public.clone();
     input.extend(witness.clone());
+
     // Construct Span Program (ssp):
     let ssp = SquareSpanProgram::from_scs(SquareConstraintSystem::from_matrix(u, public.len()));
 
